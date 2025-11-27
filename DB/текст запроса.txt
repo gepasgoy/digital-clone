@@ -1,0 +1,90 @@
+
+
+CREATE table patients (
+	PatientId SERIAL PRIMARY KEY,
+	FirstName VARCHAR,
+	SecondName varchar,
+	patronymic Varchar,
+	Age INT,
+	SNILS INT,
+	POLIS VARCHAR
+);
+
+CREATE TABLE medicine_stuff (
+	StuffId serial primary key,
+	FirstName VARCHAR,
+	SecondName varchar,
+	Patronymic Varchar,
+	Post Varchar
+);
+
+create table medical_history (
+	HistoryId serial primary key,
+	Diagnosis Varchar,
+	PatientId Int references patients(PatientId),
+	StuffId Int references medicine_stuff(StuffId),
+	DiagnosisDate date,
+	Status Varchar
+);
+
+create table medical_research (
+	ResearchId serial primary key,
+	ResearchName varchar,
+	ResearchState varchar,
+	ResearchDate timestamp,
+	PatientId Int references patients(PatientId),
+	Result text
+);
+
+create table groups (
+	GroupId serial primary key,
+	GroupName varchar
+);
+
+create table drugs (
+	DrugId serial primary key,
+	DrugName varchar,
+	DrugType varchar
+);
+
+create table drug_forbidden_groups (
+    DrugId integer references drugs(DrugId),
+    GroupId integer references groups(GroupId),
+    primary key (DrugId, GroupId)
+);
+
+create table assigned_treatment (
+	TreatmentId serial primary key,
+	PatientId Int references patients(PatientId),
+	StuffId Int references medicine_stuff(StuffId),
+	TreatmentSheme jsonb,
+	TreatmentDate timestamp
+);
+
+create table assigned_treatment_drugs (
+    TreatmentId integer references assigned_treatment(TreatmentId),
+    DrugId integer references drugs(DrugId),
+    primary key (TreatmentId, DrugId)
+);
+
+create table visits (
+	VisitId serial primary key,
+	VisitDate timestamp,
+	PatientId Int references patients(PatientId),
+	StuffId Int references medicine_stuff(StuffId)
+);
+
+create table complains (
+	ComplainId serial primary key,
+	PatientId Int references patients(PatientId),
+	StuffId Int references medicine_stuff(StuffId),
+	ComplainDecription text,
+	ComplainDate timestamp,
+	Symptoms jsonb
+);
+
+create table PulseMonitoring (
+	MonId serial primary key,
+	PatientId Int references patients(PatientId),
+	Value int CHECK (Value > 80 AND Value < 160)
+);
