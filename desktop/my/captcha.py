@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 
 root = tk.Tk()
 root.geometry("440x560")
@@ -30,9 +31,36 @@ buttons = tk.Frame(frame2)
 buttons.pack(pady=10)
 
 
+def check_answer():
+    """Проверка ответа на медицинскую капчу"""
+    answer = answer_text.get("1.0", tk.END).lower()
+
+    # Ключевые слова для проверки
+    required_keywords = [
+        ['гипертензия', 'гипертония'],
+        ['сахарный диабет', 'глюкоза', 'гипергликемия'],
+        ['антигипертензивные', 'лечение', 'терапия']
+    ]
+
+    # Проверяем наличие ключевых слов из каждой группы
+    found_groups = 0
+    for group in required_keywords:
+        if any(keyword in answer for keyword in group):
+            found_groups += 1
+
+    if found_groups >= 2:
+        root.destroy()
+
+
+    else:
+        messagebox.showerror("Ошибка",
+                             "Ответ недостаточно полный. Опишите диагноз и рекомендуемое лечение.")
+
 tk.Button(buttons, text="Подтвердить",
-                   command=lambda: print("ewww")).pack(side=tk.LEFT, padx=5)
+                   command=lambda: check_answer()).pack(side=tk.LEFT, padx=5)
 tk.Button(buttons, text="Отмена",
                    command=root.destroy).pack(side=tk.LEFT, padx=5)
 
-root.mainloop()
+def run():
+    root.mainloop()
+

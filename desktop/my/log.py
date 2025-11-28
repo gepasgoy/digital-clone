@@ -1,6 +1,7 @@
 # импортируем библиотеку tkinter всю сразу
 from tkinter import *
 from tkinter import messagebox
+import re
 
 # главное окно приложения
 window = Tk()
@@ -26,8 +27,14 @@ def clicked():
     username = username_entry.get()
     password = password_entry.get()
 
-    # выводим в диалоговое окно введенные пользователем данные
-    messagebox.showinfo("Вход",f"Вы успешно вошли как {username}")
+    pattern = r'^[A-Za-z]\d{7}$'
+    if bool(re.match(pattern, username)):
+        # выводим в диалоговое окно введенные пользователем данные
+        messagebox.showinfo("Вход",f"Вы успешно вошли как {username}")
+        window.destroy()
+
+    else:
+        messagebox.showerror(title="Ошибка",message="Попробуйте еще!")
 
 
 # заголовок формы: настроены шрифт (font), отцентрирован (justify), добавлены отступы для заголовка
@@ -49,7 +56,7 @@ password_label = Label(window, text='Пароль', font=label_font , **base_pad
 password_label.pack()
 
 # поле ввода пароля
-password_entry = Entry(window, bg='#fff', fg='#444', font=font_entry)
+password_entry = Entry(window, bg='#fff', fg='#444', font=font_entry, show="*")
 password_entry.pack()
 
 # кнопка отправки формы
@@ -57,5 +64,6 @@ send_btn = Button(window, text='Войти', command=clicked)
 send_btn.pack(**base_padding)
 
 
-# запускаем главный цикл окна
-window.mainloop()
+def run():
+    window.mainloop()
+    return True
