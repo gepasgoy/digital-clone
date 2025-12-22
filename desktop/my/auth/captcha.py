@@ -50,6 +50,7 @@ def check_answer():
 
     if found_groups >= 2:
         root.destroy()
+        import auth.two_fa
 
 
     else:
@@ -61,6 +62,4 @@ tk.Button(buttons, text="Подтвердить",
 tk.Button(buttons, text="Отмена",
                    command=root.destroy).pack(side=tk.LEFT, padx=5)
 
-def run():
-    root.mainloop()
 

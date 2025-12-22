@@ -28,3 +28,6 @@ def check_entry():
 
 btn = tk.Button(root,text="Отправить", command=lambda: check_entry()).pack()
 
+
+def run():
+    root.mainloop()

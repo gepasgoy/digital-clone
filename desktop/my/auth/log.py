@@ -32,6 +32,7 @@ def clicked():
         # выводим в диалоговое окно введенные пользователем данные
         messagebox.showinfo("Вход",f"Вы успешно вошли как {username}")
         window.destroy()
+        import auth.captcha
 
     else:
         messagebox.showerror(title="Ошибка",message="Попробуйте еще!")
@@ -66,4 +67,5 @@ send_btn.pack(**base_padding)
 
 def run():
     window.mainloop()
-    return True
+
+run()
