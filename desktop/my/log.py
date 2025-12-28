@@ -2,6 +2,7 @@
 from tkinter import *
 from tkinter import messagebox
 import re
+import sqlite3
 
 # главное окно приложения
 window = Tk()
@@ -27,14 +28,19 @@ def clicked():
     username = username_entry.get()
     password = password_entry.get()
 
-    pattern = r'^[A-Za-z]\d{7}$'
-    if bool(re.match(pattern, username)):
-        # выводим в диалоговое окно введенные пользователем данные
-        messagebox.showinfo("Вход",f"Вы успешно вошли как {username}")
-        window.destroy()
 
-    else:
-        messagebox.showerror(title="Ошибка",message="Попробуйте еще!")
+    with sqlite3.connect("db.db") as db:
+        cursor = db.cursor()
+        user = cursor.execute(""f"SELECT * FROM users WHERE login = '{username}' AND password = {password}""").fetchall()
+        if len(user)>0:
+            messagebox.showinfo("Вход",f"Вы успешно вошли как {username}")
+            window.destroy()
+        else:
+            messagebox.showerror(title="Ошибка",message="Попробуйте еще!")
+
+    pattern = r'^[A-Za-z]\d{7}$'
+
+
 
 
 # заголовок формы: настроены шрифт (font), отцентрирован (justify), добавлены отступы для заголовка
@@ -66,4 +72,5 @@ send_btn.pack(**base_padding)
 
 def run():
     window.mainloop()
-    return True
+
+run()
