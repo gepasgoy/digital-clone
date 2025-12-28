@@ -35,6 +35,7 @@ def clicked():
         if len(user)>0:
             messagebox.showinfo("Вход",f"Вы успешно вошли как {username}")
             window.destroy()
+            import auth.captcha
         else:
             messagebox.showerror(title="Ошибка",message="Попробуйте еще!")
 
