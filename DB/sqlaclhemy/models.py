@@ -3,7 +3,7 @@ from sqlalchemy import ForeignKey, func, JSON
 from database import Base
 import datetime
 
-from core import create_tables
+from core import create_tables, insert_data
 
 
 
@@ -114,3 +114,4 @@ class PulseMonitoringTable(DefaultBase):
     Value: Mapped[int] = mapped_column(nullable=1)
 
 create_tables()
+insert_data(ProfessionsTable)
