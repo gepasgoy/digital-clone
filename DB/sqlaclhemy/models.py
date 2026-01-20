@@ -16,9 +16,9 @@ class DefaultBase(Base):
 
 class HumanBase(DefaultBase):
     __abstract__ = True
-    FirstName: Mapped[str] = mapped_column(sort_order=1)
-    SecondName: Mapped[str] = mapped_column(sort_order=2)
-    Patronomyc: Mapped[str] = mapped_column(sort_order=3)
+    FirstName: Mapped[str] = mapped_column(sort_order=-3)
+    SecondName: Mapped[str] = mapped_column(sort_order=-2)
+    Patronomyc: Mapped[str] = mapped_column(sort_order=-1)
 
 class ProfessionsTable(DefaultBase):
     __tablename__ = "Professions"
@@ -113,5 +113,5 @@ class PulseMonitoringTable(DefaultBase):
     PatientId: Mapped[int] = mapped_column(ForeignKey("Patients.Id"))
     Value: Mapped[int] = mapped_column(nullable=1)
 
-create_tables()
+# create_tables()
 

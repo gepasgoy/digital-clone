@@ -1,7 +1,6 @@
 from database import engine, Base, ses
 
 def create_tables():
-    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
 def drop_tables():
