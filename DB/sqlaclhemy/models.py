@@ -3,22 +3,22 @@ from sqlalchemy import ForeignKey, func, JSON
 from database import Base
 import datetime
 
-from core import create_tables, insert_data
+from core import create_tables, insert_data, drop_tables
 
 
 
 class DefaultBase(Base):
     __abstract__ = True
 
-    Id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True)
-    CreatedAt: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
-    UpdatedAt: Mapped[datetime.datetime] = mapped_column(server_default=func.now(), onupdate=datetime.datetime.now)
+    Id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True, sort_order=-10)
+    CreatedAt: Mapped[datetime.datetime] = mapped_column(server_default=func.now(), sort_order=20)
+    UpdatedAt: Mapped[datetime.datetime] = mapped_column(server_default=func.now(), onupdate=datetime.datetime.now, sort_order=21)
 
 class HumanBase(DefaultBase):
     __abstract__ = True
-    FirstName: Mapped[str]
-    SecondName: Mapped[str]
-    Patronomyc: Mapped[str]
+    FirstName: Mapped[str] = mapped_column(sort_order=1)
+    SecondName: Mapped[str] = mapped_column(sort_order=2)
+    Patronomyc: Mapped[str] = mapped_column(sort_order=3)
 
 class ProfessionsTable(DefaultBase):
     __tablename__ = "Professions"
@@ -114,4 +114,4 @@ class PulseMonitoringTable(DefaultBase):
     Value: Mapped[int] = mapped_column(nullable=1)
 
 create_tables()
-insert_data(ProfessionsTable)
+
