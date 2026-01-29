@@ -1,4 +1,4 @@
-from database import engine, Base, ses
+from db_app.sqlalchemy_utils.database import engine, Base, ses
 
 def create_tables():
     Base.metadata.create_all(engine)

@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, func, JSON
-from database import Base
+from db_app.sqlalchemy_utils.database import Base
 import datetime
 
-from core import create_tables, insert_data, drop_tables
+from db_app.sqlalchemy_utils.core import create_tables, insert_data, drop_tables
 
 
 
@@ -112,6 +112,24 @@ class PulseMonitoringTable(DefaultBase):
     __tablename__ = "PulseMonitoring"
     PatientId: Mapped[int] = mapped_column(ForeignKey("Patients.Id"))
     Value: Mapped[int] = mapped_column(nullable=1)
+
+class UsersTable(Base):
+    __tablename__ = "Users"
+    Id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True, sort_order=-10)
+    Name: Mapped[str]
+    Bio: Mapped[str] = mapped_column(nullable=1)
+    email: Mapped[str]
+    password: Mapped[str]
+    RoleId: Mapped[int] = mapped_column(ForeignKey("Roles.Id"), default=1)
+
+
+class RolesTable(Base):
+    __tablename__="Roles"
+    Id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True, sort_order=-10)
+    RoleName: Mapped[str]
+    Permissions: Mapped[dict] = mapped_column(JSON)
+
+    users = relationship("UsersTable", backref="roles_rel")
 
 # create_tables()
 
