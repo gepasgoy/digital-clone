@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, func, JSON
+from sqlalchemy import ForeignKey, func, JSON, Index, DateTime, CheckConstraint
 from db_app.sqlalchemy_utils.database import Base
 import datetime
 
@@ -47,6 +47,7 @@ class PatientsTable(HumanBase):
     treatments = relationship("AssignedTreatmentTable", backref="patients_rel")
     visits = relationship("VisitsTable", backref="patients_rel")
     pulse_monitoring = relationship("PulseMonitoringTable", backref="patients_rel")
+    users = relationship("UsersTable", backref="patients_rel")
 
 class TypesOfDrugsTable(Base):
     __tablename__ = "DrugTypes"
@@ -120,6 +121,7 @@ class UsersTable(Base):
     Bio: Mapped[str] = mapped_column(nullable=1)
     email: Mapped[str]
     password: Mapped[str]
+    PatientId: Mapped[int] = mapped_column(ForeignKey("Patients.Id"), nullable=1)
     RoleId: Mapped[int] = mapped_column(ForeignKey("Roles.Id"), default=1)
 
 
@@ -130,6 +132,28 @@ class RolesTable(Base):
     Permissions: Mapped[dict] = mapped_column(JSON)
 
     users = relationship("UsersTable", backref="roles_rel")
+
+#пример ограничений и индексов(было лень делать)
+class TestIndexAndCheckTable(Base):
+    __tablename__="IndexTestTable"
+    Id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True, sort_order=-10)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("Patients.Id"), index=True) #представим, что я сделал отношения между таблицами
+    measurement_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+    value: Mapped[int] = mapped_column()
+    # 1. ОСНОВНОЙ СОСТАВНОЙ ИНДЕКС для самых частых запросов
+    # (пациент + время) - для выборки временного ряда пациента
+    __table_args__ = (
+    Index(
+        'idx_patient_time', 
+        'patient_id', 
+        'measurement_time',
+    ),
+    CheckConstraint(
+            "value > 0",
+            name="ck_measurement_value_positive"
+        ),)
 
 # create_tables()
 
