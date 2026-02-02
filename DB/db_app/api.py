@@ -4,7 +4,7 @@ from authx import AuthX, AuthXConfig
 from authx.schema import TokenPayload
 from pydantic import BaseModel, Field, EmailStr, validator
 from db_app.sqlalchemy_utils.database import get_db # type: ignore
-from db_app.sqlalchemy_utils.models import UsersTable, PatientsTable, ResearchTable, PulseMonitoringTable # type: ignore
+from db_app.sqlalchemy_utils.models import UsersTable, PatientsTable, ResearchTable, PulseMonitoringTable, UsersComplainsTable #type:ignore
 
 
 class AuthModel(BaseModel):
@@ -26,6 +26,15 @@ class PulseMonitoringInput(BaseModel):
         if v > 300:
             raise ValueError('Значение слишком велико')
         return v
+    
+class ComplainDescription(BaseModel):
+    PatientId: int
+    Description: str
+
+class Notification(BaseModel):
+    message: str
+    priority: str = "low"
+    action_required: bool = True
 
 app = FastAPI()
 
@@ -44,7 +53,7 @@ def admin_required(db:Session = Depends(get_db), user_id: TokenPayload = Depends
         UsersTable.Id == int(user_id.sub)
     ).first()
 
-    if not user or user.Id != 2:
+    if not user or user.RoleId != 2:
         raise HTTPException(
             status_code=403,
             detail="Доступ запрещён"
@@ -95,7 +104,6 @@ def login(creds: AuthModel, response: Response, db: Session = Depends(get_db)):
             "refresh_token": refresh_token}
     
     
-
 @app.post("/protected", dependencies=[Depends(security.access_token_required)])
 def protected():
     return {"data": "SECRET"}
@@ -106,9 +114,8 @@ def admin_protected(user: UsersTable = Depends(admin_required)):
     return {"data": "SECRET FOR ADMINS"}
 
 @app.post("/refresh", dependencies=[Depends(security.refresh_token_required)])
-def refresh_tokens(response: Response):
-
-    new_access_token = security.create_access_token(uid="123")
+def refresh_tokens(response: Response, user_id: TokenPayload = Depends(security.access_token_required)):
+    new_access_token = security.create_access_token(uid=user_id.sub)
     security.set_access_cookies(new_access_token, response)
 
     return {"access_token": new_access_token}
@@ -250,3 +257,93 @@ def add_pulse_monitoring(
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при сохранении данных: {str(e)}")
+    
+
+@app.post("/sub_complains", dependencies=[Depends(security.access_token_required)])
+def add_complains(
+    data: ComplainDescription,
+    db: Session = Depends(get_db),
+    user_id: TokenPayload = Depends(security.access_token_required)):
+    
+    try:
+        patient_id = data.PatientId
+        
+        patient = get_patient(db,patient_id)
+        
+        if not patient:
+            raise HTTPException(
+                status_code=404,
+                detail="Пациент не найден"
+            )
+        
+        complain_record = UsersComplainsTable(
+            PatientId=patient_id,
+            Description=data.Description,
+            UserId = int(user_id.sub)
+        )
+        
+        db.add(complain_record)
+        db.commit()
+        db.refresh(complain_record)
+        
+        return {
+            "message": "Жалобы сохранены",
+            "record_id": complain_record.Id,
+            "patient_id": complain_record.PatientId,
+            "patient_name": patient.FirstName,
+            "desc": complain_record.Description,
+            "created_at": complain_record.CreatedAt
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при сохранении данных: {str(e)}")
+    
+@app.get("/notifications", dependencies=[Depends(security.access_token_required), Depends(admin_required)])
+def get_notifications(user_id: TokenPayload = Depends(security.access_token_required),
+    db: Session = Depends(get_db)):
+    user = db.query(UsersTable).filter(UsersTable.Id == int(user_id.sub)).first()
+    notifications = []
+    
+    # 1. Проверка последнего измерения пульса
+    last_pulse = db.query(PulseMonitoringTable).filter(
+        PulseMonitoringTable.PatientId == user.PatientId
+    ).order_by(PulseMonitoringTable.CreatedAt.desc()).first()
+    
+    if last_pulse:
+        # Уведомление если давно не измеряли пульс
+        from datetime import datetime, timedelta
+        if datetime.now() - last_pulse.CreatedAt > timedelta(hours=24):
+            notifications.append(
+                Notification(
+                    message="Прошло более 24 часов с последнего измерения пульса",
+                    priority="medium",
+                    action_required=True
+                )
+            )
+        
+        # Уведомление если пульс вне нормы
+        if last_pulse.Value > 100:
+            notifications.append(
+                Notification(
+                    message=f"Высокий пульс ({last_pulse.Value} уд/мин). Рекомендуется отдых",
+                    priority="high",
+                    action_required=True
+                )
+            )
+        elif last_pulse.Value < 50:
+            notifications.append(
+                Notification(
+                    message=f"Низкий пульс ({last_pulse.Value} уд/мин)",
+                    priority="medium",
+                    action_required=True
+                )
+            )
+            
+    return {
+        "user_id": user.Id,
+        "total_notifications": len(notifications),
+        "notifications": notifications
+    }

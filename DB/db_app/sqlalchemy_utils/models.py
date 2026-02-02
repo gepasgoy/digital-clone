@@ -48,6 +48,7 @@ class PatientsTable(HumanBase):
     visits = relationship("VisitsTable", backref="patients_rel")
     pulse_monitoring = relationship("PulseMonitoringTable", backref="patients_rel")
     users = relationship("UsersTable", backref="patients_rel")
+    users_complains = relationship("UsersComplainsTable", backref="patients_rel")
 
 class TypesOfDrugsTable(Base):
     __tablename__ = "DrugTypes"
@@ -124,6 +125,8 @@ class UsersTable(Base):
     PatientId: Mapped[int] = mapped_column(ForeignKey("Patients.Id"), nullable=1)
     RoleId: Mapped[int] = mapped_column(ForeignKey("Roles.Id"), default=1)
 
+    users_complains_rel = relationship("UsersComplainsTable", backref="users_rel")
+
 
 class RolesTable(Base):
     __tablename__="Roles"
@@ -132,6 +135,12 @@ class RolesTable(Base):
     Permissions: Mapped[dict] = mapped_column(JSON)
 
     users = relationship("UsersTable", backref="roles_rel")
+
+class UsersComplainsTable(DefaultBase):
+    __tablename__="UsersComplains"
+    PatientId:Mapped[int] = mapped_column(ForeignKey("Patients.Id"))
+    UserId:Mapped[int] = mapped_column(ForeignKey("Users.Id"))
+    Description:Mapped[str]
 
 #пример ограничений и индексов(было лень делать)
 class TestIndexAndCheckTable(Base):
@@ -155,5 +164,5 @@ class TestIndexAndCheckTable(Base):
             name="ck_measurement_value_positive"
         ),)
 
-# create_tables()
+create_tables()
 
