@@ -5,7 +5,7 @@ import re, random
 app = FastAPI()
 
 # "База"
-users = {"boba@gmail.com":"DSFfsdf123!"}
+users = {"user@exam.c":"123123y43gqq34ryqy3r4JHKFSA*%^&@3"}
 pending = {}   # временные регистрации
 
 

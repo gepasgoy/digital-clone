@@ -1,58 +1,63 @@
 import streamlit as st
 import requests
-import warnings
 
-# Отключаем предупреждения Streamlit
-warnings.filterwarnings("ignore", message="missing ScriptRunContext")
-st.title("🔐 Простейшая авторизация")
+API = "http://localhost:8000"
+
+st.title("📝 Регистрация (3 этапа)")
+tab1, tab2 = st.tabs(["Регистрация", "Логин"])
+
+# ---------- РЕГИСТРАЦИЯ ----------
+with tab1:
+    step = st.radio("Этап", [1, 2, 3], horizontal=True)
+
+    if step == 1:
+        email = st.text_input("Email", key="s1_email")
+        password = st.text_input("Пароль", type="password", key="s1_pass")
+
+        if st.button("Отправить код"):
+            r = requests.post(f"{API}/register/step1",
+                json={"email": email, "password": password})
+            st.json(r.json())
+
+    if step == 2:
+        email = st.text_input("Email", key="s2_email")
+        code = st.text_input("Код из email", key="s2_code")
+
+        if st.button("Подтвердить"):
+            r = requests.post(f"{API}/register/step2",
+                json={"email": email, "code": code})
+            st.json(r.json())
+
+    if step == 3:
+        email = st.text_input("Email", key="s3_email")
+        height = st.number_input("Рост", 100, 250, key="s3_height")
+        weight = st.number_input("Вес", 30, 300, key="s3_weight")
+
+        if st.button("Завершить регистрацию"):
+            r = requests.post(f"{API}/register/step3",
+                json={"email": email, "height": height, "weight": weight})
+            st.json(r.json())
 
 
-# Поля для ввода
-username = st.text_input("Username")
-password = st.text_input("Password", type="password")
+# ---------- ЛОГИН ----------
+with tab2:
+    st.subheader("Вход")
 
-# Кнопка входа
-if st.button("Login"):
-    if username and password:
-        try:
-            # Отправляем запрос к API
-            response = requests.post(
-                "http://localhost:8000/login", 
-                json={"username": username, "password": password}
-            )
-            
-            result = response.json()
-            
-            if result["success"]:
-                st.success(result["message"])
-                st.balloons()  # Анимация при успешном входе
-                
-                # Показать защищенный контент
-                st.markdown("---")
-                st.subheader("Добро пожаловать в систему!")
-                st.write("Вы успешно авторизовались.")
-                st.write("Здесь может быть ваш защищенный контент.")
-            else:
-                st.error(result["message"])
-                
-        except requests.exceptions.ConnectionError:
-            st.error("Не удалось подключиться к серверу. Убедитесь, что FastAPI запущен!")
-        except Exception as e:
-            st.error(f"Произошла ошибка: {e}")
-    else:
-        st.warning("Пожалуйста, введите логин и пароль")
+    email = st.text_input("Email", key="login_email")
+    password = st.text_input("Пароль", type="password", key="login_pass")
 
-# Информация о тестовых пользователях
-st.sidebar.markdown("### Тестовые пользователи")
-st.sidebar.write("**admin** / **admin123**")
-st.sidebar.write("**user** / **password**")
+    if st.button("Войти"):
+        r = requests.post(f"{API}/login",
+            json={"email": email, "password": password})
+        res = r.json()
+        if res["success"]:
+            st.success(res["message"])
+            st.balloons()
+        else:
+            st.error(res["message"])
 
-# Инструкция
-st.sidebar.markdown("### Как запустить:")
+
 st.sidebar.code("""
-# Терминал 1:
 uvicorn simple_api:app --reload
-
-# Терминал 2:
 streamlit run simple_app.py
 """)
