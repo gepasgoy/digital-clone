@@ -14,7 +14,7 @@ with tab1:
         r = login(email, password)
         if r["success"]:
             set_auth(email)
-            st.switch_page("pages/1_🏠_Главная.py")
+            st.switch_page("pages/1.py")
         else:
             st.error(r["message"])
 
