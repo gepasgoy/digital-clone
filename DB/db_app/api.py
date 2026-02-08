@@ -93,7 +93,11 @@ def register_user(user: RegisterModel, response: Response, db: Session = Depends
 def login(creds: AuthModel, response: Response, db: Session = Depends(get_db)):
     user = db.query(UsersTable).filter(UsersTable.email == creds.mail).first()
     
-    if not user: return "Пользователь не найден"
+    if not user:
+        raise HTTPException(status_code=404,detail="Пользователь не найден")
+
+    if user.password != creds.password:
+        raise HTTPException(status_code=401,detail="Неверный пароль")
 
     token = security.create_access_token(uid=str(user.Id), )
     refresh_token = security.create_refresh_token(uid=str(user.Id))
@@ -104,17 +108,29 @@ def login(creds: AuthModel, response: Response, db: Session = Depends(get_db)):
             "refresh_token": refresh_token}
     
     
-@app.post("/protected", dependencies=[Depends(security.access_token_required)])
+@app.get("/protected", dependencies=[Depends(security.access_token_required)])
 def protected():
     return {"data": "SECRET"}
 
-@app.post("/admin_protected", dependencies=[Depends(security.access_token_required)])
+@app.get("/admin_protected", dependencies=[Depends(security.access_token_required)])
 def admin_protected(user: UsersTable = Depends(admin_required)):
     
     return {"data": "SECRET FOR ADMINS"}
 
+@app.get("/me")
+def me(user_id: TokenPayload = Depends(security.access_token_required),db: Session = Depends(get_db)):
+
+    u = db.query(UsersTable).filter(UsersTable.Id == int(user_id.sub)).first()
+
+    return {
+        "user_id": u.Id,
+        "patient_id": u.PatientId,
+        "role": u.RoleId,
+        "name": u.Name
+    }
+
 @app.post("/refresh", dependencies=[Depends(security.refresh_token_required)])
-def refresh_tokens(response: Response, user_id: TokenPayload = Depends(security.access_token_required)):
+def refresh_tokens(response: Response, user_id: TokenPayload = Depends(security.refresh_token_required)):
     new_access_token = security.create_access_token(uid=user_id.sub)
     security.set_access_cookies(new_access_token, response)
 

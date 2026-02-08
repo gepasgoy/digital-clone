@@ -1,0 +1,115 @@
+import streamlit as st
+import re
+import random
+from auth import login_user, register_user
+
+st.title("Авторизация")
+
+mode = st.radio("Режим", ["Вход", "Регистрация"], horizontal=True)
+
+# LOGIN
+
+if mode == "Вход":
+    mail = st.text_input("Email")
+    password = st.text_input("Пароль", type="password")
+
+    if st.button("Войти"):
+        ok, err = login_user(mail, password)
+        if ok:
+            st.switch_page("pages/2_Dashboard.py")
+        else:
+            st.error(err)
+
+# REGISTER — 3 STEP
+
+if mode == "Регистрация":
+
+    if "reg_step" not in st.session_state:
+        st.session_state.reg_step = 1
+        st.session_state.reg_data = {}
+
+    step = st.session_state.reg_step
+
+    # ---------------- STEP 1 ----------------
+
+    if step == 1:
+        st.subheader("Шаг 1 — Базовые данные")
+
+        name = st.text_input("Имя")
+        mail = st.text_input("Email")
+        password = st.text_input("Пароль", type="password")
+
+        def valid_password(p):
+            return (
+                len(p) >= 12
+                and re.search(r"\d", p)
+                and re.search(r"[!@#$%^&*(),.?\":{}|<>]", p)
+            )
+
+        if st.button("Далее"):
+
+            if not valid_password(password):
+                st.error("Пароль ≥12 символов, цифра и спецсимвол")
+                st.stop()
+
+            st.session_state.reg_data = {
+                "Name": name,
+                "mail": mail,
+                "password": password
+            }
+
+            code = str(random.randint(100000, 999999))
+            st.session_state.email_code = code
+
+            st.session_state.reg_step = 2
+            st.rerun()
+
+    # ---------------- STEP 2 ----------------
+
+    elif step == 2:
+        st.subheader("Шаг 2 — Подтверждение email")
+        st.info(f"📧 Эмуляция email — код: {st.session_state.email_code}")
+
+        code = st.text_input("Введите код из email")
+
+        if st.button("Подтвердить"):
+            if code == st.session_state.email_code:
+                st.session_state.reg_step = 3
+                st.rerun()
+            else:
+                st.error("Неверный код")
+
+    # ---------------- STEP 3 ----------------
+
+    elif step == 3:
+        st.subheader("Шаг 3 — Медицинская анкета")
+
+        height = st.number_input("Рост (см)", 50, 300)
+        weight = st.number_input("Вес (кг)", 10, 400)
+
+        if st.button("Завершить регистрацию"):
+
+            if not (100 <= height <= 250):
+                st.error("Рост должен быть 100–250 см")
+                st.stop()
+
+            if not (30 <= weight <= 300):
+                st.error("Вес должен быть 30–300 кг")
+                st.stop()
+
+            # сохраняем (если потом добавишь API — отправишь туда)
+            st.session_state.reg_data["height"] = height
+            st.session_state.reg_data["weight"] = weight
+
+            ok, err = register_user(
+                st.session_state.reg_data["mail"],
+                st.session_state.reg_data["password"],
+                st.session_state.reg_data["Name"],
+            )
+
+            if ok:
+                st.success("Регистрация завершена")
+                st.session_state.reg_step = 1
+                st.session_state.reg_data = {}
+            else:
+                st.error(err)
