@@ -1,11 +1,10 @@
 import streamlit as st
 from auth import guard
 from api_client import api_get
-from ui import topbar, sidebar_menu
+from ui import topbar
 
 guard()
 topbar()
-sidebar_menu()
 
 st.title("Главная")
 
@@ -35,18 +34,18 @@ if pid:
 # =========================
 
 st.divider()
-st.subheader("Быстрые действия")
+st.subheader("Быстрые действия", text_alignment="center")
 
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    if st.button("➕ Добавить пульс"):
+    if st.button("➕ Добавить пульс", use_container_width=1):
         st.switch_page("pages/3_Indicators.py")
 
 with c2:
-    if st.button("📝 Жалоба"):
+    if st.button("📝 Жалоба", use_container_width=1):
         st.switch_page("pages/5_Diary.py")
 
 with c3:
-    if st.button("📊 Статистика"):
+    if st.button("📊 Статистика", use_container_width=1):
         st.switch_page("pages/6_Stats.py")

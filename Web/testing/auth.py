@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 from api_client import api_post, api_get
 
 def login_user(mail, password):
@@ -31,3 +32,14 @@ def register_user(mail, password, name):
 def guard():
     if not st.session_state.get("logged_in"):
         st.switch_page("pages/1_Login.py")
+
+    now = time.time()
+
+    last = st.session_state.get("last_activity", now)
+
+    if now - last > 120:
+        st.session_state.clear()
+        st.warning("Сессия истекла")
+        st.switch_page("pages/1_Login.py")
+
+    st.session_state.last_activity = now

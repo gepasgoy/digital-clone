@@ -1,7 +1,28 @@
 import streamlit as st
 import re
 import random
+import time
 from auth import login_user, register_user
+
+st.session_state.setdefault("login_attempts", 0)
+st.session_state.setdefault("lock_until", 0)
+st.session_state.setdefault("captcha_ok", False)
+
+def gen_captcha():
+    seq = [
+        "💧 Запить водой",
+        "💊 Принять таблетку",
+        "🍽 Поесть"
+    ]
+    random.shuffle(seq)
+    st.session_state.captcha_order = seq
+    st.session_state.captcha_ok = False
+
+
+if "captcha_order" not in st.session_state:
+    gen_captcha()
+
+
 
 st.title("Авторизация")
 
@@ -13,11 +34,45 @@ if mode == "Вход":
     mail = st.text_input("Email")
     password = st.text_input("Пароль", type="password")
 
+    st.subheader("Проверка")
+
+    user_seq = st.multiselect(
+        "Выбери правильный порядок приёма лекарства:",
+        st.session_state.captcha_order
+    )
+
+    if st.button("Проверить порядок"):
+        if user_seq == ["🍽 Поесть", "💊 Принять таблетку", "💧 Запить водой"]:
+            st.session_state.captcha_ok = True
+            st.success("Верно")
+        else:
+            st.error("Неверный порядок")
+
+    
     if st.button("Войти"):
+        now = time.time()
+
+        if now < st.session_state.lock_until:
+            st.error("Слишком много попыток. Подожди минуту.")
+            st.stop()
+
+        if st.session_state.login_attempts >= 2:
+            st.session_state.lock_until = time.time() + 60
+            st.error("Блокировка на 1 минуту")
+            st.stop()
+
+        if not st.session_state.get("captcha_ok"):
+            st.error("Пройди проверку")
+            st.session_state.login_attempts = st.session_state.get("login_attempts", 0) + 1
+            st.stop()
+
         ok, err = login_user(mail, password)
         if ok:
+            gen_captcha()
+            st.session_state.login_attempts = 0
             st.switch_page("pages/2_Dashboard.py")
         else:
+            st.session_state.login_attempts = st.session_state.get("login_attempts", 0) + 1
             st.error(err)
 
 # REGISTER — 3 STEP
