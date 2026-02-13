@@ -3,6 +3,12 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QTimer
 
+import subprocess
+import time
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtCore import QUrl
+
+
 API = "http://127.0.0.1:8000"
 
 
@@ -103,131 +109,46 @@ def age_tag(age):
     return "Взрослый"
 
 
-class Main(QMainWindow):
+# ---------------- MAIN ----------------
 
+class Main(QMainWindow):
     def __init__(self, token, role):
         super().__init__()
-        self.ui = load_ui("Main.ui", self)
+
+        self.ui = load_ui("Main.ui")
+        self.setCentralWidget(self.ui)
+
         self.token = token
         self.role = role
 
-        # ---------------- РОЛИ ----------------
-
-        if role != 2:  # admin = 2 в твоем API
-            self.ui.groupExportBtn.setEnabled(False)
-
-        # ---------------- ПАЦИЕНТ ----------------
-
-        self.patient = PATIENTS[0]
-
-        self.ui.patientNameLabel.setText(self.patient["name"])
-        self.ui.patientAgeLabel.setText(str(self.patient["age"]))
-        self.ui.tagLabel.setText(age_tag(self.patient["age"]))
-
-        # ---------------- БЫСТРЫЕ ДЕЙСТВИЯ ----------------
-
-        self.ui.quickPulseBtn.clicked.connect(
-            lambda: print("Добавить пульс")
+        # --- Streamlit процесс ---
+        self.streamlit_process = subprocess.Popen(
+            [
+                "streamlit",
+                "run",
+                "dashboard.py",
+                "--server.port",
+                "8501",
+                "--server.headless",
+                "true"
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
         )
 
-        self.ui.quickNoteBtn.clicked.connect(
-            lambda: print("Добавить заметку")
-        )
+        # даем серверу подняться
+        QTimer.singleShot(2500, self.init_webview)
 
-        self.ui.quickAlertBtn.clicked.connect(
-            lambda: print("Сигнал врачу")
-        )
+    def init_webview(self):
+        # Используем существующий QWebEngineView из UI
+        web_view = self.ui.webEngineView
+        web_view.setUrl(QUrl("http://localhost:8501"))
 
-        # ---------------- СПИСОК ПАЦИЕНТОВ ----------------
-
-        self.ui.patientsList.clear()
-
-        for p in PATIENTS:
-            self.ui.patientsList.addItem(
-                f'{p["id"]} | {p["name"]} | {age_tag(p["age"])}'
-            )
-
-        self.ui.groupTagBtn.clicked.connect(self.group_tag)
-        self.ui.groupExportBtn.clicked.connect(self.group_export)
-
-        # ---------------- ИСТОРИЯ БОЛЕЗНИ ----------------
-
-        # self.ui.historyTable.setRowCount(2)
-        # self.ui.historyTable.setColumnCount(2)
-        # self.ui.historyTable.setHorizontalHeaderLabels(
-        #     ["Дата","Событие"]
-        # )
-
-        # self.ui.historyTable.setItem(0,0,QTableWidgetItem("01.02"))
-        # self.ui.historyTable.setItem(0,1,QTableWidgetItem("Осмотр"))
-
-        # ---------------- НАЗНАЧЕНИЯ ----------------
-
-        # self.ui.assignList.addItems([
-        #     "Аспирин",
-        #     "Контроль АД"
-        # ])
-
-        # ---------------- ИССЛЕДОВАНИЯ ----------------
-
-        # self.ui.researchTable.setRowCount(1)
-        # self.ui.researchTable.setColumnCount(2)
-        # self.ui.researchTable.setHorizontalHeaderLabels(
-        #     ["Тип","Результат"]
-        # )
-
-        # self.ui.researchTable.setItem(0,0,QTableWidgetItem("Глюкоза"))
-        # self.ui.researchTable.setItem(0,1,QTableWidgetItem("8.5"))
-
-        # # ---------------- ДОКУМЕНТЫ ----------------
-
-        # self.ui.docsList.addItems([
-        #     "Эпикриз.pdf",
-        #     "Анализы.pdf"
-        # ])
-
-        # ---------------- АВТОЛОГУТ ----------------
-
-        # self.timer = QTimer()
-        # self.timer.timeout.connect(self.logout)
-        # self.timer.start(10000)
-
-        # for w in self.ui.findChildren(object):
-        #     try: w.installEventFilter(self)
-        #     except: pass
-
-
-    # -------- групповые операции --------
-
-    def selected_ids(self):
-        ids = []
-        for i in self.ui.patientsList.selectedItems():
-            ids.append(i.text().split("|")[0])
-        return ids
-
-    def group_tag(self):
-        print("Назначить тег:", self.selected_ids())
-
-    def group_export(self):
-        print("Экспорт:", self.selected_ids())
-
-    # -------- авто выход --------
-
-    # def eventFilter(self, *_):
-    #     self.timer.start(10000)
-    #     return False
-
-    # def logout(self):
-    #     try:
-    #         requests.post(API+"/logout",
-    #             headers={"Authorization":f"Bearer {self.token}"})
-    #     except:
-    #         pass
-    #     self.l = Login()
-    #     self.l.show()
-    #     self.close()
-
-
+    def closeEvent(self, event):
+        # корректно убиваем streamlit при закрытии окна
+        if hasattr(self, "streamlit_process"):
+            self.streamlit_process.terminate()
+        event.accept()
 
 
 # ---------------- RUN ----------------
