@@ -1,114 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>439</width>
-    <height>401</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
-  <widget class="QPushButton" name="adminBtn">
-   <property name="geometry">
-    <rect>
-     <x>160</x>
-     <y>60</y>
-     <width>101</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Admin</string>
-   </property>
-  </widget>
-  <widget class="QWidget" name="layoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>120</y>
-     <width>331</width>
-     <height>211</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout_3">
-    <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <item>
-         <widget class="QLabel" name="label1">
-          <property name="text">
-           <string>смс код</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="smsEdit"/>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QPushButton" name="smsBtn">
-        <property name="text">
-         <string>PushButton</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="smsLabel">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QLabel" name="label2">
-          <property name="text">
-           <string>каптча</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="captchaEdit"/>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QPushButton" name="captchaBtn">
-        <property name="text">
-         <string>PushButton</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="captchaLabel">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
+ <class>VerifyForm</class>
+ <widget class="QWidget" name="VerifyForm">
+  <layout class="QVBoxLayout">
+
+   <item><widget class="QLabel" name="smsLabel"/></item>
+
+   <item><widget class="QLineEdit" name="smsEdit">
+     <property name="placeholderText"><string>Введите SMS код</string></property>
+   </widget></item>
+
+   <item><widget class="QPushButton" name="smsBtn">
+     <property name="text"><string>Проверить SMS</string></property>
+   </widget></item>
+
+   <item>
+    <widget class="QLabel">
+     <property name="text">
+      <string>Пациент 65 лет, АД 170/100, глюкоза 8.5 — диагноз?</string>
+     </property>
+    </widget>
+   </item>
+
+   <item><widget class="QLineEdit" name="capEdit">
+     <property name="placeholderText"><string>Ответ</string></property>
+   </widget></item>
+
+   <item><widget class="QPushButton" name="capBtn">
+     <property name="text"><string>Проверить</string></property>
+   </widget></item>
+
+  </layout>
  </widget>
- <resources/>
- <connections/>
 </ui>

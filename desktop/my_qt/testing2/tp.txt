@@ -1,0 +1,1310 @@
+#Main.ui
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainForm</class>
+ <widget class="QWidget" name="MainForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>680</width>
+    <height>374</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Обзор</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="tabLayout">
+       <item>
+        <layout class="QVBoxLayout" name="dashboardLayout"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>Пациенты</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="patientsLayout">
+       <item>
+        <layout class="QHBoxLayout" name="searchLayout">
+         <item>
+          <widget class="QLineEdit" name="searchNameEdit">
+           <property name="placeholderText">
+            <string>ФИО</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="searchIdEdit">
+           <property name="placeholderText">
+            <string>ID</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="searchDiagEdit">
+           <property name="placeholderText">
+            <string>Диагноз</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="filterLayout">
+         <item>
+          <widget class="QComboBox" name="deptBox"/>
+         </item>
+         <item>
+          <widget class="QComboBox" name="statusBox"/>
+         </item>
+         <item>
+          <widget class="QComboBox" name="ageBox"/>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="patientsTable"/>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="quickBox">
+         <property name="title">
+          <string>Быстрые действия</string>
+         </property>
+         <layout class="QHBoxLayout">
+          <item>
+           <widget class="QPushButton" name="qaNewTreatmentBtn">
+            <property name="text">
+             <string>Новое назначение</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="qaVisitBtn">
+            <property name="text">
+             <string>Записать на прием</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="qaResearchBtn">
+            <property name="text">
+             <string>Добавить исследование</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="qaEpicrisisBtn">
+            <property name="text">
+             <string>Создать эпикриз</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_history">
+      <attribute name="title">
+       <string>История болезней</string>
+      </attribute>
+      <layout class="QVBoxLayout">
+       <item>
+        <widget class="QTableWidget" name="historyTable"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_treatments">
+      <attribute name="title">
+       <string>Назначения</string>
+      </attribute>
+      <layout class="QVBoxLayout">
+       <item>
+        <widget class="QTableWidget" name="treatmentTable"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_research">
+      <attribute name="title">
+       <string>Исследования</string>
+      </attribute>
+      <layout class="QVBoxLayout">
+       <item>
+        <widget class="QTableWidget" name="researchTable"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+
+
+#main.py
+import sys, random, requests, subprocess
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QTableWidgetItem, QMenu,
+    QDialog, QVBoxLayout, QFormLayout, QLabel, QPushButton,
+    QMessageBox, QAbstractItemView, QTreeWidget, QTreeWidgetItem, QWidget,QLineEdit, QTableWidget, QComboBox
+)
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtCore import QFile, QTimer, QUrl, Qt
+from PySide6.QtGui import QColor
+
+API = "http://127.0.0.1:8000"
+
+# ---------------- UI LOADER ----------------
+def load_ui(name, parent=None):
+    f = QFile(name)
+    f.open(QFile.ReadOnly)
+    ui = QUiLoader().load(f, parent)
+    f.close()
+    return ui
+
+# ---------------- LOGIN ----------------
+class Login(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.ui = load_ui("Login.ui", self)
+        self.ui.loginBtn.clicked.connect(self.go)
+
+    def go(self):
+        r = requests.post(API+"/login", json={
+            "mail": self.ui.mailEdit.text(),
+            "password": self.ui.passEdit.text()
+        })
+        if r.status_code != 200:
+            self.ui.statusLabel.setText("login fail")
+            return
+        token = r.json()["access_token"]
+        self.v = Verify(token)
+        self.v.show()
+        self.close()
+
+# ---------------- VERIFY ----------------
+class Verify(QMainWindow):
+    def __init__(self, token):
+        super().__init__()
+        self.ui = load_ui("Verify.ui", self)
+        self.token = token
+        self.sms_ok = False
+        self.captcha_ok = False
+        self.sms = str(random.randint(1000,9999))
+        self.ui.smsLabel.setText(f"SMS код: {self.sms}")
+        self.ui.smsBtn.clicked.connect(self.check_sms)
+        self.ui.captchaLabel.setText(
+            "Пациент 65 лет, АД 170/100, глюкоза 8.5 — диагноз?"
+        )
+        self.ui.captchaBtn.clicked.connect(self.check_captcha)
+
+    def check_sms(self):
+        if self.ui.smsEdit.text() == self.sms:
+            self.sms_ok = True
+            self.try_open_main()
+
+    def check_captcha(self):
+        if "гипер" in self.ui.captchaEdit.text().lower():
+            self.captcha_ok = True
+            self.try_open_main()
+
+    def try_open_main(self):
+        if self.sms_ok and self.captcha_ok:
+            me = requests.get(
+                API+"/me",
+                headers={"Authorization": f"Bearer {self.token}"}
+            ).json()
+            self.m = Main(self.token, me["role"])
+            self.m.show()
+            self.close()
+
+# ---------------- HELPERS ----------------
+def age_group(age):
+    if age >= 60:
+        return "Пожилой"
+    if age < 18:
+        return "Ребёнок"
+    return "Взрослый"
+
+def risk_from_age(age):
+    if age >= 65:
+        return "high"
+    if age >= 45:
+        return "medium"
+    return "low"
+
+# ---------------- MAIN ----------------
+class Main(QMainWindow):
+    def __init__(self, token, role):
+        super().__init__()
+        self.ui = load_ui("Main.ui")
+        self.setCentralWidget(self.ui)
+
+        self.token = token
+        self.role = role
+        self.patients_data = []
+        self.notifications = []
+
+        # ---------- STREAMLIT ----------
+        self.streamlit_process = subprocess.Popen(
+            [
+                "streamlit",
+                "run",
+                "dashboard.py",
+                "--server.port",
+                "8501",
+                "--server.headless",
+                "true"
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        QTimer.singleShot(3000, self.init_webview)
+
+        # ---------- PATIENT TAB ----------
+        self.init_patients_tab()
+        self.load_patients_from_api()
+        self.init_quick_actions()
+
+        # ---------- ДОПОЛНИТЕЛЬНЫЕ ВКЛАДКИ ----------
+        self.add_extra_tabs()
+        self.add_journal_tab()
+        self.add_recommendations_tab()
+
+        # ---------- РОЛЕВОЙ ДОСТУП ----------
+        self.setup_role_permissions()
+
+        # ---------- УВЕДОМЛЕНИЯ ----------
+        self.setup_notifications()
+
+    # ---------- STREAMLIT VIEW ----------
+    def init_webview(self):
+        self.web = QWebEngineView(self)
+        self.web.setUrl(QUrl("http://localhost:8501/?page=overview"))
+        self.ui.dashboardLayout.addWidget(self.web)
+
+    # ---------- НОВЫЕ ВКЛАДКИ ----------
+    def add_journal_tab(self):
+        self.journal_tab = QWidget()
+        layout = QVBoxLayout(self.journal_tab)
+
+        # Кнопка добавления записи
+        self.add_journal_btn = QPushButton("Добавить запись")
+        self.add_journal_btn.clicked.connect(self.show_add_journal_dialog)
+        layout.addWidget(self.add_journal_btn)
+
+        # Таблица журнала
+        self.journal_table = QTableWidget()
+        self.journal_table.setColumnCount(4)
+        self.journal_table.setHorizontalHeaderLabels(["Дата", "Тип", "Описание", "Пациент"])
+        self.journal_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        layout.addWidget(self.journal_table)
+
+        self.ui.tabWidget.addTab(self.journal_tab, "Журнал")
+        self.load_journal()
+
+    def show_add_journal_dialog(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Новая запись в журнал")
+        layout = QFormLayout(dialog)
+
+        date_edit = QLineEdit()
+        date_edit.setPlaceholderText("ГГГГ-ММ-ДД")
+        type_edit = QLineEdit()
+        type_edit.setPlaceholderText("Приём / Исследование / ...")
+        desc_edit = QLineEdit()
+        desc_edit.setPlaceholderText("Описание")
+        patient_edit = QLineEdit()
+        patient_edit.setPlaceholderText("ФИО пациента")
+
+        layout.addRow("Дата:", date_edit)
+        layout.addRow("Тип:", type_edit)
+        layout.addRow("Описание:", desc_edit)
+        layout.addRow("Пациент:", patient_edit)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addRow(buttons)
+
+        if dialog.exec() == QDialog.Accepted:
+            data = {
+                "date": date_edit.text(),
+                "type": type_edit.text(),
+                "description": desc_edit.text(),
+                "patient_name": patient_edit.text()
+            }
+            # Отправка на сервер
+            r = requests.post(
+                f"{API}/journal",
+                json=data,
+                headers={"Authorization": f"Bearer {self.token}"}
+            )
+            if r.status_code == 200:
+                new_entry = r.json()
+                self.insert_journal_row(new_entry)
+            else:
+                QMessageBox.warning(self, "Ошибка", "Не удалось сохранить запись")
+        
+    def insert_journal_row(self, entry):
+        row = self.journal_table.rowCount()
+        self.journal_table.insertRow(row)
+        self.journal_table.setItem(row, 0, QTableWidgetItem(entry["date"]))
+        self.journal_table.setItem(row, 1, QTableWidgetItem(entry["type"]))
+        self.journal_table.setItem(row, 2, QTableWidgetItem(entry["description"]))
+        self.journal_table.setItem(row, 3, QTableWidgetItem(entry["patient_name"]))
+
+    def add_extra_tabs(self):
+        # Вкладка Визуализация
+        self.vis_tab = QWidget()
+        layout = QVBoxLayout(self.vis_tab)
+        self.vis_webview = QWebEngineView()
+        self.vis_webview.setUrl(QUrl("http://localhost:8501/?page=analytics"))
+        layout.addWidget(self.vis_webview)
+        self.ui.tabWidget.addTab(self.vis_tab, "Визуализация")
+
+        # Вкладка Документы
+        self.doc_tab = QWidget()
+        layout = QVBoxLayout(self.doc_tab)
+        self.doc_table = QTableWidget()
+        self.doc_table.setColumnCount(3)
+        self.doc_table.setHorizontalHeaderLabels(["Название", "Дата", "Ссылка"])
+        self.doc_table.setRowCount(2)
+        self.doc_table.setItem(0, 0, QTableWidgetItem("Выписка"))
+        self.doc_table.setItem(0, 1, QTableWidgetItem("2026-02-14"))
+        self.doc_table.setItem(0, 2, QTableWidgetItem("Скачать"))
+        self.doc_table.setItem(1, 0, QTableWidgetItem("Результаты анализа"))
+        self.doc_table.setItem(1, 1, QTableWidgetItem("2026-02-13"))
+        self.doc_table.setItem(1, 2, QTableWidgetItem("Скачать"))
+        layout.addWidget(self.doc_table)
+        self.ui.tabWidget.addTab(self.doc_tab, "Документы")
+
+    def add_journal_tab(self):
+        self.journal_tab = QWidget()
+        layout = QVBoxLayout(self.journal_tab)
+        self.journal_table = QTableWidget()
+        self.journal_table.setColumnCount(4)
+        self.journal_table.setHorizontalHeaderLabels(["Дата", "Тип", "Описание", "Пациент"])
+        layout.addWidget(self.journal_table)
+        self.ui.tabWidget.addTab(self.journal_tab, "Журнал")
+        self.load_journal()
+
+    def add_recommendations_tab(self):
+        self.rec_tab = QWidget()
+        layout = QVBoxLayout(self.rec_tab)
+        self.rec_tree = QTreeWidget()
+        self.rec_tree.setHeaderLabel("Клинические рекомендации")
+        for cat in ["Гипертония", "Диабет", "ИБС"]:
+            item = QTreeWidgetItem([cat])
+            r = requests.get(f"{API}/recommendations", params={"diagnosis": cat})
+            if r.status_code == 200:
+                recs = r.json()
+                if isinstance(recs, list):
+                    for rec in recs:
+                        child = QTreeWidgetItem([rec])
+                        item.addChild(child)
+            self.rec_tree.addTopLevelItem(item)
+        layout.addWidget(self.rec_tree)
+        self.ui.tabWidget.addTab(self.rec_tab, "Рекомендации")
+
+    def load_journal(self):
+        r = requests.get(f"{API}/journal", headers={"Authorization": f"Bearer {self.token}"})
+        if r.status_code == 200:
+            data = r.json()
+            self.journal_table.setRowCount(0)
+            for entry in data:
+                self.insert_journal_row(entry)
+
+    # ---------- PATIENTS TAB ----------
+    def init_patients_tab(self):
+        ui = self.ui
+        ui.patientsTable.setColumnCount(7)  # добавили колонку для тегов
+        ui.patientsTable.setHorizontalHeaderLabels(
+            ["ID","ФИО","Диагноз","Отделение","Статус","Возраст","Теги"]
+        )
+
+        ui.deptBox.addItems(["Все"])
+        ui.statusBox.addItems(["Все"])
+        ui.ageBox.addItems(["Все","Ребёнок","Взрослый","Пожилой"])
+
+        # Добавляем фильтр по тегам
+        ui.tagBox = QComboBox()
+        ui.tagBox.addItems(["Все", "Диабет", "Гипертония", "Беременность", "Сердечно-сосудистые"])
+        ui.filterLayout.addWidget(ui.tagBox)
+        ui.tagBox.currentTextChanged.connect(self.apply_filters)
+
+        for w in [ui.searchNameEdit, ui.searchIdEdit, ui.searchDiagEdit]:
+            w.textChanged.connect(self.apply_filters)
+
+        ui.deptBox.currentTextChanged.connect(self.apply_filters)
+        ui.statusBox.currentTextChanged.connect(self.apply_filters)
+        ui.ageBox.currentTextChanged.connect(self.apply_filters)
+
+        ui.patientsTable.setContextMenuPolicy(Qt.CustomContextMenu)
+        ui.patientsTable.customContextMenuRequested.connect(self.patient_menu)
+        ui.patientsTable.setSelectionMode(QAbstractItemView.MultiSelection)  # групповой выбор
+
+    def init_quick_actions(self):
+        ui = self.ui
+        ui.qaNewTreatmentBtn.clicked.connect(self.qa_new_treatment)
+        ui.qaVisitBtn.clicked.connect(self.qa_visit)
+        ui.qaResearchBtn.clicked.connect(self.qa_research)
+        ui.qaEpicrisisBtn.clicked.connect(self.qa_epicrisis)
+
+        # Кнопка групповых операций
+        ui.qaGroupBtn = QPushButton("Групповые операции")
+        ui.qaGroupBtn.clicked.connect(self.group_operations)
+        ui.quickBox.layout().addWidget(ui.qaGroupBtn)
+
+        # Кнопка уведомлений
+        ui.notifBtn = QPushButton("Уведомления (0)")
+        ui.notifBtn.clicked.connect(self.show_notification_center)
+        ui.quickBox.layout().addWidget(ui.notifBtn)
+
+    def setup_role_permissions(self):
+        if self.role != 2:  # не админ
+            self.ui.quickBox.setVisible(False)
+
+    # ---------- LOAD FROM API ----------
+    def load_patients_from_api(self):
+        if self.role != 2:
+            return
+        r = requests.get(
+            API+"/patients",
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        if r.status_code != 200:
+            return
+        data = r.json()["patients"]
+        self.patients_data = []
+        for p in data:
+            self.patients_data.append({
+                "id": p["id"],
+                "name": f'{p["second_name"]} {p["first_name"]} {p["patronomyc"]}',
+                "diag": "—",
+                "dept": "—",
+                "status": "—",
+                "age": p["age"],
+                "risk": risk_from_age(p["age"]),
+                "tags": p.get("tags", "")
+            })
+        self.apply_filters()
+
+    # ---------- FILTER ----------
+    def apply_filters(self):
+        ui = self.ui
+        rows = []
+        tag_filter = ui.tagBox.currentText()
+        for p in self.patients_data:
+            if ui.searchNameEdit.text().lower() not in p["name"].lower():
+                continue
+            if ui.searchIdEdit.text() and ui.searchIdEdit.text() != str(p["id"]):
+                continue
+            if ui.searchDiagEdit.text().lower() not in p["diag"].lower():
+                continue
+            ag = age_group(p["age"])
+            if ui.ageBox.currentText() != "Все" and ag != ui.ageBox.currentText():
+                continue
+            if tag_filter != "Все" and tag_filter not in p["tags"]:
+                continue
+            rows.append(p)
+        self.fill_table(rows)
+
+    # ---------- TABLE ----------
+    def fill_table(self, data):
+        t = self.ui.patientsTable
+        t.setRowCount(len(data))
+        colors = {
+            "high": QColor("#ffb3b3"),
+            "medium": QColor("#ffe0b3"),
+            "low": QColor("#b3ffcc")
+        }
+        for r, p in enumerate(data):
+            vals = [p["id"], p["name"], p["diag"], p["dept"], p["status"], p["age"], p["tags"]]
+            for c, val in enumerate(vals):
+                item = QTableWidgetItem(str(val))
+                item.setBackground(colors[p["risk"]])
+                t.setItem(r, c, item)
+        t.resizeColumnsToContents()
+
+    # ---------- CONTEXT MENU ----------
+    def patient_menu(self, pos):
+        table = self.ui.patientsTable
+        row = table.currentRow()
+        if row < 0:
+            return
+        pid = int(table.item(row,0).text())
+        menu = QMenu()
+        a_hist = menu.addAction("История болезней")
+        a_treat = menu.addAction("Назначения")
+        a_res = menu.addAction("Исследования")
+        menu.addSeparator()
+        tags_menu = menu.addMenu("Назначить тег")
+        for tag in ["Диабет", "Гипертония", "Беременность", "Сердечно-сосудистые"]:
+            action = tags_menu.addAction(tag)
+            action.triggered.connect(lambda checked, t=tag: self.assign_tag(pid, t))
+        act = menu.exec(table.mapToGlobal(pos))
+        if act == a_hist:
+            self.open_patient_tab(pid, "history")
+        elif act == a_treat:
+            self.open_patient_tab(pid, "treat")
+        elif act == a_res:
+            self.open_patient_tab(pid, "research")
+
+    def assign_tag(self, pid, tag):
+        requests.patch(
+            f"{API}/patients/{pid}/tags",
+            params={"tag": tag},
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        for p in self.patients_data:
+            if p["id"] == pid:
+                p["tags"] = tag
+                break
+        self.apply_filters()
+
+    # ---------- GROUP OPERATIONS ----------
+    def group_operations(self):
+        selected_rows = set()
+        for item in self.ui.patientsTable.selectedItems():
+            selected_rows.add(item.row())
+        if not selected_rows:
+            QMessageBox.information(self, "Информация", "Не выбрано ни одного пациента")
+            return
+        patient_ids = [int(self.ui.patientsTable.item(row, 0).text()) for row in selected_rows]
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Групповые операции")
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(QLabel("Выберите тег для назначения:"))
+        combo = QComboBox()
+        combo.addItems(["Диабет", "Гипертония", "Беременность", "Сердечно-сосудистые"])
+        layout.addWidget(combo)
+        btn = QPushButton("Применить")
+        layout.addWidget(btn)
+        btn.clicked.connect(lambda: self.apply_bulk_tag(patient_ids, combo.currentText(), dialog))
+        dialog.exec()
+
+    def apply_bulk_tag(self, patient_ids, tag, dialog):
+        requests.post(
+            f"{API}/patients/bulk/tags",
+            json={"patient_ids": patient_ids, "tag": tag},
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        for p in self.patients_data:
+            if p["id"] in patient_ids:
+                p["tags"] = tag
+        self.apply_filters()
+        dialog.accept()
+
+    # ---------- DRUG INTERACTION (DIALOG) ----------
+    def qa_new_treatment(self):
+        pid = self.get_selected_patient_id()
+        if not pid:
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Новое назначение")
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(QLabel(f"Пациент ID: {pid}"))
+        form = QFormLayout()
+        self.drug1_edit = QLineEdit()
+        self.drug2_edit = QLineEdit()
+        form.addRow("Препарат 1:", self.drug1_edit)
+        form.addRow("Препарат 2:", self.drug2_edit)
+        layout.addLayout(form)
+        check_btn = QPushButton("Проверить взаимодействие")
+        layout.addWidget(check_btn)
+        result_label = QLabel("")
+        layout.addWidget(result_label)
+        check_btn.clicked.connect(lambda: self.check_interaction(result_label))
+        save_btn = QPushButton("Сохранить назначение")
+        layout.addWidget(save_btn)
+        save_btn.clicked.connect(dialog.accept)
+        dialog.exec()
+
+    def check_interaction(self, label):
+        drug1 = self.drug1_edit.text().strip()
+        drug2 = self.drug2_edit.text().strip()
+        if not drug1 or not drug2:
+            label.setText("Введите оба препарата")
+            return
+        r = requests.get(f"{API}/drug-interaction", params={"drug1": drug1, "drug2": drug2})
+        if r.status_code == 200:
+            data = r.json()
+            if data["interaction"]:
+                label.setText(f"Взаимодействие: {data['interaction']} (severity: {data['severity']})")
+            else:
+                label.setText("Взаимодействий не найдено")
+        else:
+            label.setText("Ошибка проверки")
+
+    # ---------- NOTIFICATIONS ----------
+    def setup_notifications(self):
+        self.notification_timer = QTimer()
+        self.notification_timer.timeout.connect(self.check_notifications)
+        self.notification_timer.start(30000)  # каждые 30 сек
+        self.check_notifications()
+
+    def check_notifications(self):
+        r = requests.get(f"{API}/notifications", headers={"Authorization": f"Bearer {self.token}"})
+        if r.status_code == 200:
+            data = r.json()
+            self.notifications = data.get("notifications", [])
+            self.ui.notifBtn.setText(f"Уведомления ({len(self.notifications)})")
+            for n in self.notifications:
+                if n.get("priority") == "high":
+                    self.show_notification_popup(n["message"])
+
+    def show_notification_popup(self, message):
+        # Простое всплывающее окно
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Critical)
+        msg.setWindowTitle("Критическое уведомление")
+        msg.setText(message)
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.show()
+
+    def show_notification_center(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Центр уведомлений")
+        layout = QVBoxLayout(dialog)
+        tree = QTreeWidget()
+        tree.setHeaderLabel("Уведомления")
+        groups = {"high": "Критические", "medium": "Предупреждения", "low": "Информационные"}
+        for priority, title in groups.items():
+            group_item = QTreeWidgetItem([title])
+            for n in self.notifications:
+                if n.get("priority") == priority:
+                    item = QTreeWidgetItem([n["message"]])
+                    group_item.addChild(item)
+            tree.addTopLevelItem(group_item)
+        layout.addWidget(tree)
+        dialog.exec()
+
+    # ---------- FAST ACTIONS (заглушки) ----------
+    def get_selected_patient_id(self):
+        t = self.ui.patientsTable
+        row = t.currentRow()
+        if row < 0:
+            print("Пациент не выбран")
+            return None
+        return int(t.item(row,0).text())
+
+    def qa_visit(self):
+        pid = self.get_selected_patient_id()
+        if not pid: return
+        print("прием для", pid)
+
+    def qa_epicrisis(self):
+        pid = self.get_selected_patient_id()
+        if not pid: return
+        print("эпикриз для", pid)
+
+    def qa_research(self):
+        pid = self.get_selected_patient_id()
+        if not pid: return
+        print("исследование добавлено")
+
+    # ---------- OPEN PATIENT TAB (заглушки) ----------
+    def open_patient_tab(self, pid, mode):
+        r = requests.get(
+            API + "/medical-card",
+            params={"patient_id": pid},
+            headers={"Authorization": f"Bearer {self.token}"}
+        )
+        if r.status_code != 200:
+            print("medical-card error", r.text)
+            return
+        data = r.json()
+        if mode == "research":
+            self.fill_research(data["research"])
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_research)
+        elif mode == "treat":
+            self.fill_treatments([])
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_treatments)
+        elif mode == "history":
+            self.fill_history([])
+            self.ui.tabWidget.setCurrentWidget(self.ui.tab_history)
+
+    def fill_history(self, items):
+        t = self.ui.historyTable
+        t.setColumnCount(1)
+        t.setHorizontalHeaderLabels(["Нет данных"])
+        t.setRowCount(0)
+
+    def fill_treatments(self, items):
+        t = self.ui.treatmentTable
+        t.setColumnCount(1)
+        t.setHorizontalHeaderLabels(["Нет данных"])
+        t.setRowCount(0)
+
+    def fill_research(self, items):
+        t = self.ui.researchTable
+        t.setColumnCount(4)
+        t.setHorizontalHeaderLabels(["ID","Название","Дата","Результат"])
+        t.setRowCount(len(items))
+        for r,x in enumerate(items):
+            t.setItem(r,0,QTableWidgetItem(str(x["id"])))
+            t.setItem(r,1,QTableWidgetItem(x["name"]))
+            t.setItem(r,2,QTableWidgetItem(str(x["date"])))
+            t.setItem(r,3,QTableWidgetItem(str(x["result"])))
+        t.resizeColumnsToContents()
+
+    # ---------- CLOSE ----------
+    def closeEvent(self, event):
+        if hasattr(self, "streamlit_process"):
+            self.streamlit_process.terminate()
+        event.accept()
+
+# ---------------- RUN ----------------
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    if "--test" in sys.argv:
+        token = "test_token"
+        role = 2
+        w = Main(token, role)
+    else:
+        w = Login()
+    w.show()
+    app.exec()
+
+#dashboard.py
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+
+st.set_page_config(layout="wide")
+
+page = st.query_params.get("page", "overview")
+
+if page == "overview":
+    st.title("Медицинский аналитический дашборд")
+
+    st.subheader("📈 Эффективность лечения")
+    days = pd.date_range("2026-01-01", periods=14)
+    treatment_df = pd.DataFrame({
+        "Дата": days,
+        "Среднее давление": np.linspace(165, 130, 14) + np.random.randint(-3, 3, 14),
+        "Глюкоза": np.linspace(9.2, 6.1, 14) + np.random.normal(0, 0.2, 14),
+        "CRP": np.linspace(18, 5, 14) + np.random.normal(0, 1, 14),
+    })
+    col1, col2, col3 = st.columns(3)
+    col1.metric("АД текущее", "132", "-33")
+    col2.metric("Глюкоза", "6.3", "-2.9")
+    col3.metric("CRP", "6", "-12")
+    fig = px.line(treatment_df, x="Дата", y=["Среднее давление", "Глюкоза", "CRP"],
+                  title="Динамика клинических показателей")
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("🧬 Статистика заболеваний")
+    disease_df = pd.DataFrame({
+        "Нозология": ["Гипертония", "СД 2 типа", "ИБС", "ОРВИ", "Бронхит", "Астма"],
+        "Пациентов": [120, 85, 64, 210, 43, 27]
+    })
+    col1, col2 = st.columns(2)
+    with col1:
+        fig = px.pie(disease_df, names="Нозология", values="Пациентов", title="Распределение пациентов")
+        st.plotly_chart(fig, use_container_width=True)
+    with col2:
+        fig = px.bar(disease_df, x="Нозология", y="Пациентов", title="Количество случаев")
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("🩺 Рабочая нагрузка")
+    work_df = pd.DataFrame({
+        "День": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
+        "Приемов": [28, 34, 31, 40, 37, 18],
+        "Первичных": [10, 12, 11, 15, 13, 6],
+        "Повторных": [18, 22, 20, 25, 24, 12],
+    })
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Всего приемов", sum(work_df["Приемов"]))
+    col2.metric("Среднее/день", round(work_df["Приемов"].mean(), 1))
+    col3.metric("Максимум", max(work_df["Приемов"]))
+    fig = px.bar(work_df, x="День", y=["Первичных", "Повторных"],
+                 title="Структура приемов по дням", barmode="stack")
+    st.plotly_chart(fig, use_container_width=True)
+
+elif page == "analytics":
+    st.title("Аналитические отчеты по эффективности лечения")
+
+    st.subheader("Динамика эффективности лечения")
+    df = pd.DataFrame({
+        "Месяц": ["Янв", "Фев", "Мар", "Апр"],
+        "Процент улучшений": [75, 78, 82, 80],
+        "Плановый показатель": [80, 80, 80, 80]
+    })
+    fig = px.line(df, x="Месяц", y=["Процент улучшений", "Плановый показатель"],
+                  title="Сравнение с планом")
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("Распределение исходов")
+    outcomes = pd.DataFrame({
+        "Исход": ["Выздоровление", "Улучшение", "Без изменений", "Ухудшение"],
+        "Количество": [45, 30, 15, 10]
+    })
+    fig = px.pie(outcomes, names="Исход", values="Количество", title="Исходы лечения")
+    st.plotly_chart(fig, use_container_width=True)
+
+#api.py
+
+from fastapi import FastAPI, HTTPException, Depends, Response, Request
+from datetime import datetime
+import random
+from sqlalchemy.orm import Session
+from authx import AuthX, AuthXConfig
+from authx.schema import TokenPayload
+from pydantic import BaseModel, Field, EmailStr, validator
+from db_app.sqlalchemy_utils.database import get_db # type: ignore
+from db_app.sqlalchemy_utils.models import UsersTable, PatientsTable, ResearchTable, PulseMonitoringTable, UsersComplainsTable #type:ignore
+
+
+class AuthModel(BaseModel):
+    mail: EmailStr
+    password: str
+
+class RegisterModel(AuthModel):
+    Name: str
+
+class PulseMonitoringInput(BaseModel):
+    value: int
+    patient_id: int|None = None  # Если не указан, используется ID текущего пользователя
+    
+    #Валидатор на всякий оставил, мб пригодится
+    @validator('value')
+    def validate_value(cls, v):
+        if v <= 0:
+            raise ValueError('Значение должно быть положительным')
+        if v > 300:
+            raise ValueError('Значение слишком велико')
+        return v
+    
+class ComplainDescription(BaseModel):
+    PatientId: int
+    Description: str
+
+class Notification(BaseModel):
+    message: str
+    priority: str = "low"
+    action_required: bool = True
+
+app = FastAPI()
+
+config = AuthXConfig()
+config.JWT_SECRET_KEY = "SECRET_KEY"
+config.JWT_ACCESS_COOKIE_NAME = "my_token"
+config.JWT_TOKEN_LOCATION = ["headers","cookies"]
+config.JWT_COOKIE_CSRF_PROTECT = False
+
+
+security = AuthX(config=config)
+
+
+def admin_required(db:Session = Depends(get_db), user_id: TokenPayload = Depends(security.access_token_required)):
+    user = db.query(UsersTable).filter(
+        UsersTable.Id == int(user_id.sub)
+    ).first()
+
+    if not user or user.RoleId != 2:
+        raise HTTPException(
+            status_code=403,
+            detail="Доступ запрещён"
+        )
+
+    return user
+
+def get_patient(db: Session = Depends(get_db), patient_id:int=-1):
+    patient = db.query(PatientsTable).filter(
+            PatientsTable.Id == patient_id
+        ).first()
+    return patient
+            
+
+@app.post("/register")
+def register_user(user: RegisterModel, response: Response, db: Session = Depends(get_db)):
+    existing_user = db.query(UsersTable).filter(UsersTable.email == user.mail).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Пользователь с таким email уже существует"
+        )
+    new_user = UsersTable(
+        email=user.mail,
+        Name=user.Name,
+        password=user.password
+    )
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        return e
+
+@app.post("/login")
+def login(creds: AuthModel, response: Response, db: Session = Depends(get_db)):
+    user = db.query(UsersTable).filter(UsersTable.email == creds.mail).first()
+    
+    if not user:
+        raise HTTPException(status_code=404,detail="Пользователь не найден")
+
+    if user.password != creds.password:
+        raise HTTPException(status_code=401,detail="Неверный пароль")
+
+    token = security.create_access_token(uid=str(user.Id), )
+    refresh_token = security.create_refresh_token(uid=str(user.Id))
+    security.set_access_cookies(token,response)
+    security.set_refresh_cookies(refresh_token,response)
+
+    return {"access_token": token,
+            "refresh_token": refresh_token}
+    
+    
+@app.get("/protected", dependencies=[Depends(security.access_token_required)])
+def protected():
+    return {"data": "SECRET"}
+
+@app.get("/admin_protected", dependencies=[Depends(security.access_token_required)])
+def admin_protected(user: UsersTable = Depends(admin_required)):
+    
+    return {"data": "SECRET FOR ADMINS"}
+
+@app.get("/me")
+def me(user_id: TokenPayload = Depends(security.access_token_required),db: Session = Depends(get_db)):
+
+    u = db.query(UsersTable).filter(UsersTable.Id == int(user_id.sub)).first()
+
+    return {
+        "user_id": u.Id,
+        "patient_id": u.PatientId,
+        "role": u.RoleId,
+        "name": u.Name
+    }
+
+@app.post("/refresh", dependencies=[Depends(security.refresh_token_required)])
+def refresh_tokens(response: Response, user_id: TokenPayload = Depends(security.refresh_token_required)):
+    new_access_token = security.create_access_token(uid=user_id.sub)
+    security.set_access_cookies(new_access_token, response)
+
+    return {"access_token": new_access_token}
+
+@app.post("/logout")
+def logout(response: Response):
+    security.unset_access_cookies(response)
+    security.unset_refresh_cookies(response)
+    return {"message": "Выход выполнен успешно"}
+
+@app.get("/patients", dependencies=[Depends(security.access_token_required)])
+def get_all_patients(db: Session = Depends(get_db)):
+    patients = db.query(PatientsTable).all()
+    return {
+        "total": len(patients),
+        "patients": [
+            {
+                "id": p.Id,
+                "first_name": p.FirstName,
+                "second_name": p.SecondName,
+                "patronomyc": p.Patronomyc,
+                "age": p.Age,
+                "snils": p.SNILS,
+                "polis": p.POLIS,
+                "tags": getattr(p, "Tags", "")  # если поле отсутствует, вернёт пустую строку
+            } for p in patients
+        ]
+    }
+
+@app.patch("/patients/{patient_id}/tags", dependencies=[Depends(security.access_token_required), Depends(admin_required)])
+def update_patient_tags(patient_id: int, tag: str, db: Session = Depends(get_db)):
+    patient = db.query(PatientsTable).filter(PatientsTable.Id == patient_id).first()
+    if not patient:
+        raise HTTPException(404, "Patient not found")
+    patient.Tags = tag
+    db.commit()
+    return {"message": "Tag updated"}
+
+@app.post("/patients/bulk/tags", dependencies=[Depends(security.access_token_required), Depends(admin_required)])
+def bulk_update_tags(data: dict, db: Session = Depends(get_db)):
+    patient_ids = data.get("patient_ids", [])
+    tag = data.get("tag", "")
+    patients = db.query(PatientsTable).filter(PatientsTable.Id.in_(patient_ids)).all()
+    for p in patients:
+        p.Tags = tag
+    db.commit()
+    return {"message": f"Tag '{tag}' applied to {len(patients)} patients"}
+
+@app.get("/journal", dependencies=[Depends(security.access_token_required)])
+def get_journal(db: Session = Depends(get_db)):
+    # Заглушка – можно заменить реальными данными из нескольких таблиц
+    return [
+        {"id": 1, "date": "2026-02-14", "type": "Прием", "description": "Осмотр терапевта", "patient_id": 1, "patient_name": "Иванов И.И."},
+        {"id": 2, "date": "2026-02-13", "type": "Исследование", "description": "Анализ крови", "patient_id": 2, "patient_name": "Петров П.П."},
+    ]
+
+@app.post("/journal", dependencies=[Depends(security.access_token_required)])
+def create_journal_entry(entry: dict, db: Session = Depends(get_db)):
+    # Здесь можно сохранять в реальную таблицу, но пока просто заглушка
+    # Генерируем фиктивный ID и возвращаем запись
+    entry["id"] = random.randint(1000, 9999)
+    # Можно добавить временную метку создания
+    entry["created_at"] = datetime.now().isoformat()
+    return entry
+
+@app.get("/recommendations", dependencies=[Depends(security.access_token_required)])
+def get_recommendations(diagnosis: str = None):
+    recs = {
+        "гипертония": ["Протокол лечения гипертонии 2025", "Рекомендации по диете"],
+        "диабет": ["Стандарты лечения СД 2 типа", "Контроль глюкозы"],
+        "ибс": ["Ведение пациентов с ИБС", "Антиагрегантная терапия"]
+    }
+    if diagnosis and diagnosis.lower() in recs:
+        return recs[diagnosis.lower()]
+    return recs
+
+@app.get("/drug-interaction")
+def check_drug_interaction(drug1: str, drug2: str):
+    interactions = {
+        ("Аспирин", "Варфарин"): "Повышенный риск кровотечений",
+        ("Варфарин", "Аспирин"): "Повышенный риск кровотечений",
+    }
+    key = (drug1, drug2)
+    if key in interactions:
+        return {"interaction": interactions[key], "severity": "high"}
+    return {"interaction": None, "severity": "none"}
+
+@app.get("/medical-card", dependencies=[Depends(security.access_token_required)])
+def get_medical_card(
+    patient_id: int | None = None,
+    db: Session = Depends(get_db)
+):
+    try:
+        
+        # Находим пациента
+        patient: UsersTable = get_patient(db=db,patient_id=patient_id)
+        
+        if not patient:
+            raise HTTPException(
+                status_code=404,
+                detail="Пациент не найден"
+            )
+        
+        # # Получаем историю посещений
+        # visits = db.query(VisitsTable).filter(
+        #     VisitsTable.PatientId == target_patient_id
+        # ).order_by(VisitsTable.VisitDate.desc()).all()
+        
+        # # Получаем назначенные лечения
+        # treatments = db.query(AssignedTreatmentTable).filter(
+        #     AssignedTreatmentTable.PatientId == target_patient_id
+        # ).order_by(AssignedTreatmentTable.TreatmentDate.desc()).all()
+        
+        # Получаем медицинские исследования
+        research = db.query(ResearchTable).filter(
+            ResearchTable.PatientId == patient_id
+        ).order_by(ResearchTable.EventDate.desc()).all()
+        
+        # Получаем мониторинг пульса
+        pulse_monitoring = db.query(PulseMonitoringTable).filter(
+            PulseMonitoringTable.PatientId == patient_id
+        ).order_by(PulseMonitoringTable.CreatedAt.desc()).limit(30).all()
+        
+        # Формируем ответ
+        medical_card = {
+            "patient_info": {
+                "id": patient.Id,
+                "full_name": f"{patient.SecondName} {patient.FirstName} {patient.Patronomyc}",
+                "age": patient.Age,
+                "snils": patient.SNILS,
+                "polis": patient.POLIS
+            },
+            # "visits_history": [
+            #     {
+            #         "id": visit.Id,
+            #         "date": visit.VisitDate,
+            #         "complain": visit.Complain,
+            #         "symptoms": visit.Symptoms
+            #     } for visit in visits
+            # ],
+            # "treatments": [
+            #     {
+            #         "id": treatment.Id,
+            #         "date": treatment.TreatmentDate,
+            #         "treatment_scheme": treatment.TreatmentScheme
+            #     } for treatment in treatments
+            # ],
+            "research": [
+                {
+                    "id": r.Id,
+                    "name": r.Name,
+                    "date": r.EventDate,
+                    "state": r.State,
+                    "result": r.Result
+                } for r in research
+            ],
+            "pulse_monitoring": [
+                {
+                    "id": pm.Id,
+                    "date": pm.CreatedAt,
+                    "value": pm.Value
+                } for pm in pulse_monitoring
+            ]
+        }
+        
+        return medical_card
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при получении медицинской карты: {str(e)}"
+        )
+    
+
+# КРИТЕРИЙ 2: Метод для ввода данных самоконтроля
+@app.post("/pulse-monitoring", dependencies=[Depends(security.access_token_required)])
+def add_pulse_monitoring(
+    data: PulseMonitoringInput,
+    db: Session = Depends(get_db)
+):
+    """
+    Добавление данных самоконтроля пульса.
+    """
+    try:
+        # Определяем ID пациента
+        patient_id = data.patient_id
+        
+        patient = get_patient(db,patient_id)
+        
+        if not patient:
+            raise HTTPException(
+                status_code=404,
+                detail="Пациент не найден"
+            )
+        
+        pulse_record = PulseMonitoringTable(
+            PatientId=patient_id,
+            Value=data.value
+        )
+        
+        db.add(pulse_record)
+        db.commit()
+        db.refresh(pulse_record)
+        
+        return {
+            "message": "Данные самоконтроля успешно сохранены",
+            "record_id": pulse_record.Id,
+            "patient_id": pulse_record.PatientId,
+            "patient_name": patient.FirstName,
+            "value": pulse_record.Value,
+            "created_at": pulse_record.CreatedAt
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при сохранении данных: {str(e)}")
+    
+
+@app.post("/sub_complains", dependencies=[Depends(security.access_token_required)])
+def add_complains(
+    data: ComplainDescription,
+    db: Session = Depends(get_db),
+    user_id: TokenPayload = Depends(security.access_token_required)):
+    
+    try:
+        patient_id = data.PatientId
+        
+        patient = get_patient(db,patient_id)
+        
+        if not patient:
+            raise HTTPException(
+                status_code=404,
+                detail="Пациент не найден"
+            )
+        
+        complain_record = UsersComplainsTable(
+            PatientId=patient_id,
+            Description=data.Description,
+            UserId = int(user_id.sub)
+        )
+        
+        db.add(complain_record)
+        db.commit()
+        db.refresh(complain_record)
+        
+        return {
+            "message": "Жалобы сохранены",
+            "record_id": complain_record.Id,
+            "patient_id": complain_record.PatientId,
+            "patient_name": patient.FirstName,
+            "desc": complain_record.Description,
+            "created_at": complain_record.CreatedAt
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при сохранении данных: {str(e)}")
+    
+@app.get("/notifications", dependencies=[Depends(security.access_token_required), Depends(admin_required)])
+def get_notifications(user_id: TokenPayload = Depends(security.access_token_required),
+    db: Session = Depends(get_db)):
+    user = db.query(UsersTable).filter(UsersTable.Id == int(user_id.sub)).first()
+    notifications = []
+    
+    # 1. Проверка последнего измерения пульса
+    last_pulse = db.query(PulseMonitoringTable).filter(
+        PulseMonitoringTable.PatientId == user.PatientId
+    ).order_by(PulseMonitoringTable.CreatedAt.desc()).first()
+    
+    if last_pulse:
+        # Уведомление если давно не измеряли пульс
+        from datetime import datetime, timedelta
+        if datetime.now() - last_pulse.CreatedAt > timedelta(hours=24):
+            notifications.append(
+                Notification(
+                    message="Прошло более 24 часов с последнего измерения пульса",
+                    priority="medium",
+                    action_required=True
+                )
+            )
+        
+        # Уведомление если пульс вне нормы
+        if last_pulse.Value > 100:
+            notifications.append(
+                Notification(
+                    message=f"Высокий пульс ({last_pulse.Value} уд/мин). Рекомендуется отдых",
+                    priority="high",
+                    action_required=True
+                )
+            )
+        elif last_pulse.Value < 50:
+            notifications.append(
+                Notification(
+                    message=f"Низкий пульс ({last_pulse.Value} уд/мин)",
+                    priority="medium",
+                    action_required=True
+                )
+            )
+            
+    return {
+        "user_id": user.Id,
+        "total_notifications": len(notifications),
+        "notifications": notifications
+    }

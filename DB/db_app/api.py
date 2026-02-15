@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Response, Request
+from datetime import datetime
+import random
 from sqlalchemy.orm import Session
 from authx import AuthX, AuthXConfig
 from authx.schema import TokenPayload
@@ -141,6 +143,83 @@ def logout(response: Response):
     security.unset_access_cookies(response)
     security.unset_refresh_cookies(response)
     return {"message": "Выход выполнен успешно"}
+
+@app.get("/patients", dependencies=[Depends(security.access_token_required)])
+def get_all_patients(db: Session = Depends(get_db)):
+    patients = db.query(PatientsTable).all()
+    return {
+        "total": len(patients),
+        "patients": [
+            {
+                "id": p.Id,
+                "first_name": p.FirstName,
+                "second_name": p.SecondName,
+                "patronomyc": p.Patronomyc,
+                "age": p.Age,
+                "snils": p.SNILS,
+                "polis": p.POLIS,
+                "tags": getattr(p, "Tags", "")  # если поле отсутствует, вернёт пустую строку
+            } for p in patients
+        ]
+    }
+
+@app.patch("/patients/{patient_id}/tags", dependencies=[Depends(security.access_token_required), Depends(admin_required)])
+def update_patient_tags(patient_id: int, tag: str, db: Session = Depends(get_db)):
+    patient = db.query(PatientsTable).filter(PatientsTable.Id == patient_id).first()
+    if not patient:
+        raise HTTPException(404, "Patient not found")
+    patient.Tags = tag
+    db.commit()
+    return {"message": "Tag updated"}
+
+@app.post("/patients/bulk/tags", dependencies=[Depends(security.access_token_required), Depends(admin_required)])
+def bulk_update_tags(data: dict, db: Session = Depends(get_db)):
+    patient_ids = data.get("patient_ids", [])
+    tag = data.get("tag", "")
+    patients = db.query(PatientsTable).filter(PatientsTable.Id.in_(patient_ids)).all()
+    for p in patients:
+        p.Tags = tag
+    db.commit()
+    return {"message": f"Tag '{tag}' applied to {len(patients)} patients"}
+
+@app.get("/journal", dependencies=[Depends(security.access_token_required)])
+def get_journal(db: Session = Depends(get_db)):
+    # Заглушка – можно заменить реальными данными из нескольких таблиц
+    return [
+        {"id": 1, "date": "2026-02-14", "type": "Прием", "description": "Осмотр терапевта", "patient_id": 1, "patient_name": "Иванов И.И."},
+        {"id": 2, "date": "2026-02-13", "type": "Исследование", "description": "Анализ крови", "patient_id": 2, "patient_name": "Петров П.П."},
+    ]
+
+@app.post("/journal", dependencies=[Depends(security.access_token_required)])
+def create_journal_entry(entry: dict, db: Session = Depends(get_db)):
+    # Здесь можно сохранять в реальную таблицу, но пока просто заглушка
+    # Генерируем фиктивный ID и возвращаем запись
+    entry["id"] = random.randint(1000, 9999)
+    # Можно добавить временную метку создания
+    entry["created_at"] = datetime.now().isoformat()
+    return entry
+
+@app.get("/recommendations", dependencies=[Depends(security.access_token_required)])
+def get_recommendations(diagnosis: str = None):
+    recs = {
+        "гипертония": ["Протокол лечения гипертонии 2025", "Рекомендации по диете"],
+        "диабет": ["Стандарты лечения СД 2 типа", "Контроль глюкозы"],
+        "ибс": ["Ведение пациентов с ИБС", "Антиагрегантная терапия"]
+    }
+    if diagnosis and diagnosis.lower() in recs:
+        return recs[diagnosis.lower()]
+    return recs
+
+@app.get("/drug-interaction")
+def check_drug_interaction(drug1: str, drug2: str):
+    interactions = {
+        ("Аспирин", "Варфарин"): "Повышенный риск кровотечений",
+        ("Варфарин", "Аспирин"): "Повышенный риск кровотечений",
+    }
+    key = (drug1, drug2)
+    if key in interactions:
+        return {"interaction": interactions[key], "severity": "high"}
+    return {"interaction": None, "severity": "none"}
 
 @app.get("/medical-card", dependencies=[Depends(security.access_token_required)])
 def get_medical_card(

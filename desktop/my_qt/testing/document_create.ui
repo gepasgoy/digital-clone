@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>DocCreate</class>
+
+<widget class="QDialog">
+ <property name="windowTitle">
+  <string>Создать документ</string>
+ </property>
+
+ <layout class="QFormLayout">
+
+  <item row="0" column="0">
+   <widget class="QLabel">
+    <property name="text"><string>Тип документа</string></property>
+   </widget>
+  </item>
+
+  <item row="0" column="1">
+   <widget class="QComboBox" name="docTypeBox">
+    <item><property name="text"><string>Выписка</string></property></item>
+    <item><property name="text"><string>Эпикриз</string></property></item>
+    <item><property name="text"><string>Справка</string></property></item>
+   </widget>
+  </item>
+
+  <item row="1" column="0">
+   <widget class="QLabel">
+    <property name="text"><string>Пациент ID</string></property>
+   </widget>
+  </item>
+
+  <item row="1" column="1">
+   <widget class="QLineEdit" name="patientIdEdit"/>
+  </item>
+
+  <item row="2" column="1">
+   <widget class="QDialogButtonBox">
+    <property name="standardButtons">
+     <set>QDialogButtonBox.Ok|QDialogButtonBox.Cancel</set>
+    </property>
+   </widget>
+  </item>
+
+ </layout>
+</widget>
+</ui>

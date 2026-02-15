@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>GroupOpsDialog</class>
+<widget class="QDialog">
+ <property name="windowTitle">
+  <string>Групповая операция</string>
+ </property>
+
+ <layout class="QVBoxLayout">
+
+  <item>
+   <widget class="QLabel">
+    <property name="text">
+     <string>Назначить тег выбранным пациентам</string>
+    </property>
+   </widget>
+  </item>
+
+  <item>
+   <widget class="QComboBox" name="tagBox">
+    <item><property name="text"><string>Диабет</string></property></item>
+    <item><property name="text"><string>Гипертония</string></property></item>
+    <item><property name="text"><string>Беременность</string></property></item>
+    <item><property name="text"><string>ССЗ</string></property></item>
+   </widget>
+  </item>
+
+  <item>
+   <widget class="QDialogButtonBox" name="buttonBox">
+    <property name="standardButtons">
+     <set>QDialogButtonBox.Ok|QDialogButtonBox.Cancel</set>
+    </property>
+   </widget>
+  </item>
+
+ </layout>
+</widget>
+</ui>

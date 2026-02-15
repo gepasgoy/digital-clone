@@ -1,65 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainForm</class>
- <widget class="QWidget" name="MainForm">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>527</width>
-    <height>374</height>
-   </rect>
-  </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QTabWidget" name="tabWidget">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="currentIndex">
-      <number>0</number>
-     </property>
-     <widget class="QWidget" name="tab">
-      <attribute name="title">
-       <string>Tab 1</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="tabLayout">
-       <item>
-        <widget class="QWebEngineView" name="webEngineView">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="url">
-          <url>
-           <string>about:blank</string>
-          </url>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="tab_2">
-      <attribute name="title">
-       <string>Tab 2</string>
-      </attribute>
-     </widget>
-    </widget>
-   </item>
-  </layout>
- </widget>
- <customwidgets>
-  <customwidget>
-   <class>QWebEngineView</class>
-   <extends>QWidget</extends>
-   <header location="global">QtWebEngineWidgets/QWebEngineView</header>
-  </customwidget>
- </customwidgets>
- <resources/>
- <connections/>
+<class>MainForm</class>
+
+<widget class="QWidget" name="MainForm">
+ <layout class="QVBoxLayout">
+
+  <item>
+   <widget class="QTabWidget" name="tabWidget">
+
+<!-- ОБЗОР -->
+<widget class="QWidget" name="tab_overview">
+ <attribute name="title"><string>Обзор</string></attribute>
+ <layout class="QVBoxLayout" name="dashboardLayout"/>
+</widget>
+
+<!-- ПАЦИЕНТЫ -->
+<widget class="QWidget" name="tab_patients">
+ <attribute name="title"><string>Пациенты</string></attribute>
+ <layout class="QVBoxLayout">
+
+  <!-- Панель с кнопками -->
+  <item>
+   <layout class="QHBoxLayout">
+    <item><widget class="QPushButton" name="quickTreatmentBtn">
+      <property name="text"><string>Быстрое назначение</string></property>
+    </widget></item>
+    <item><widget class="QPushButton" name="groupOpsBtn">
+      <property name="text"><string>Групповые операции</string></property>
+    </widget></item>
+    <item><widget class="QPushButton" name="auditBtn">
+      <property name="text"><string>Аудит</string></property>
+    </widget></item>
+    <item><widget class="QPushButton" name="notifCenterBtn">
+      <property name="text"><string>Уведомления</string></property>
+    </widget></item>
+    <item><widget class="QPushButton" name="createDocBtn">
+      <property name="text"><string>Создать документ</string></property>
+    </widget></item>
+    <item>
+     <spacer name="horizontalSpacer">
+      <property name="orientation"><enum>Qt::Horizontal</enum></property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
+  </item>
+
+  <!-- Поля поиска -->
+  <item>
+   <layout class="QHBoxLayout">
+    <item><widget class="QLineEdit" name="searchNameEdit">
+      <property name="placeholderText"><string>ФИО</string></property>
+    </widget></item>
+    <item><widget class="QLineEdit" name="searchIdEdit">
+      <property name="placeholderText"><string>ID</string></property>
+    </widget></item>
+    <item><widget class="QLineEdit" name="searchDiagEdit">
+      <property name="placeholderText"><string>Диагноз</string></property>
+    </widget></item>
+   </layout>
+  </item>
+
+  <!-- Таблица пациентов -->
+  <item>
+   <widget class="QTableWidget" name="patientsTable"/>
+  </item>
+
+ </layout>
+</widget>
+
+<!-- ИСТОРИЯ -->
+<widget class="QWidget" name="tab_history">
+ <attribute name="title"><string>История</string></attribute>
+ <layout class="QVBoxLayout">
+  <item><widget class="QTableWidget" name="historyTable"/></item>
+ </layout>
+</widget>
+
+<!-- НАЗНАЧЕНИЯ -->
+<widget class="QWidget" name="tab_treat">
+ <attribute name="title"><string>Назначения</string></attribute>
+ <layout class="QVBoxLayout">
+  <item><widget class="QTableWidget" name="treatmentTable"/></item>
+ </layout>
+</widget>
+
+<!-- ИССЛЕДОВАНИЯ -->
+<widget class="QWidget" name="tab_research">
+ <attribute name="title"><string>Исследования</string></attribute>
+ <layout class="QVBoxLayout">
+  <item><widget class="QTableWidget" name="researchTable"/></item>
+ </layout>
+</widget>
+
+<!-- ВИЗУАЛИЗАЦИЯ -->
+<widget class="QWidget" name="tab_vis">
+ <attribute name="title"><string>Визуализация</string></attribute>
+ <layout class="QVBoxLayout" name="visLayout"/>
+</widget>
+
+<!-- ДОКУМЕНТЫ -->
+<widget class="QWidget" name="tab_docs">
+ <attribute name="title"><string>Документы</string></attribute>
+ <layout class="QVBoxLayout">
+  <item><widget class="QTableWidget" name="docsTable"/></item>
+ </layout>
+</widget>
+
+<!-- РЕКОМЕНДАЦИИ -->
+<widget class="QWidget" name="tab_rec">
+ <attribute name="title"><string>Рекомендации</string></attribute>
+ <layout class="QVBoxLayout">
+  <item><widget class="QTreeWidget" name="recTree"/></item>
+ </layout>
+</widget>
+
+   </widget>
+  </item>
+
+ </layout>
+</widget>
 </ui>

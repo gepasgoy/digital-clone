@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>TreatmentDialog</class>
+<widget class="QDialog" name="TreatmentDialog">
+ <property name="windowTitle">
+  <string>Новое назначение</string>
+ </property>
+
+ <layout class="QVBoxLayout">
+
+  <item>
+   <layout class="QFormLayout">
+    <item row="0" column="0"><widget class="QLabel"><property name="text"><string>Препарат 1</string></property></widget></item>
+    <item row="0" column="1"><widget class="QLineEdit" name="drug1Edit"/></item>
+
+    <item row="1" column="0"><widget class="QLabel"><property name="text"><string>Препарат 2</string></property></widget></item>
+    <item row="1" column="1"><widget class="QLineEdit" name="drug2Edit"/></item>
+
+    <item row="2" column="0"><widget class="QLabel"><property name="text"><string>Дозировка</string></property></widget></item>
+    <item row="2" column="1"><widget class="QLineEdit" name="doseEdit"/></item>
+   </layout>
+  </item>
+
+  <item>
+   <widget class="QPushButton" name="checkBtn">
+    <property name="text"><string>Проверить взаимодействие</string></property>
+   </widget>
+  </item>
+
+  <item>
+   <widget class="QLabel" name="resultLabel"/>
+  </item>
+
+  <item>
+   <widget class="QDialogButtonBox" name="buttonBox">
+    <property name="standardButtons">
+     <set>QDialogButtonBox.Save|QDialogButtonBox.Cancel</set>
+    </property>
+   </widget>
+  </item>
+
+ </layout>
+</widget>
+</ui>

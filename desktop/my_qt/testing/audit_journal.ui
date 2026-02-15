@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>AuditForm</class>
+
+<widget class="QWidget">
+ <layout class="QVBoxLayout">
+
+  <item>
+   <widget class="QPushButton" name="refreshBtn">
+    <property name="text"><string>Обновить</string></property>
+   </widget>
+  </item>
+
+  <item>
+   <widget class="QTableWidget" name="auditTable"/>
+  </item>
+
+ </layout>
+</widget>
+</ui>

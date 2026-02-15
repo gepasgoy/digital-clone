@@ -1,102 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>400</width>
-    <height>367</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
-  <widget class="QPushButton" name="loginBtn">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>220</y>
-     <width>75</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Login</string>
-   </property>
-  </widget>
-  <widget class="QWidget" name="layoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>20</y>
-     <width>341</width>
-     <height>171</height>
-    </rect>
-   </property>
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Логин</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="mailEdit"/>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Пароль</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="passEdit"/>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>DOCId</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="idEdit"/>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QLabel" name="statusLabel">
-   <property name="geometry">
-    <rect>
-     <x>130</x>
-     <y>260</y>
-     <width>141</width>
-     <height>51</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Статус:</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-  </widget>
+ <class>LoginForm</class>
+ <widget class="QWidget" name="LoginForm">
+  <layout class="QVBoxLayout">
+   <item><widget class="QLabel"><property name="text"><string>Вход врача</string></property></widget></item>
+
+   <item><widget class="QLineEdit" name="idEdit">
+     <property name="placeholderText"><string>ID врача (A1234567)</string></property>
+   </widget></item>
+
+   <item><widget class="QLineEdit" name="mailEdit">
+     <property name="placeholderText"><string>Email</string></property>
+   </widget></item>
+
+   <item><widget class="QLineEdit" name="passEdit">
+     <property name="echoMode"><enum>QLineEdit.Password</enum></property>
+     <property name="placeholderText"><string>Пароль</string></property>
+   </widget></item>
+
+   <item><widget class="QPushButton" name="loginBtn">
+     <property name="text"><string>Войти</string></property>
+   </widget></item>
+
+   <item><widget class="QLabel" name="statusLabel"/></item>
+
+  </layout>
  </widget>
- <resources/>
- <connections/>
 </ui>

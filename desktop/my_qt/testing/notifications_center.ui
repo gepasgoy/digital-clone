@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+<class>NotifCenter</class>
+
+<widget class="QDialog">
+ <property name="windowTitle">
+  <string>Центр уведомлений</string>
+ </property>
+
+ <layout class="QVBoxLayout">
+
+  <item>
+   <widget class="QTreeWidget" name="notifTree">
+    <property name="headerLabel">
+     <string>Уведомления</string>
+    </property>
+   </widget>
+  </item>
+
+  <item>
+   <widget class="QDialogButtonBox">
+    <property name="standardButtons">
+     <set>QDialogButtonBox.Close</set>
+    </property>
+   </widget>
+  </item>
+
+ </layout>
+</widget>
+</ui>
